@@ -214,7 +214,7 @@ class Agent:
                         state = torch.cat([state, new_frame], 1)
                     
 
-                    #ON / OFF policy?
+                    #Target policy (Greedy-epsilon)
                     if train and np.random.uniform() < self.exploration_rate(self.t-burn_in):
                         action = np.random.choice(num_actions)
 
@@ -225,7 +225,7 @@ class Agent:
                     new_frame = self.process(new_frame)
 
                     new_state = torch.cat([state, new_frame], 1)
-                    new_state = new_state[:, 1:, :, :]
+                    new_state = new_state[:, 1:, :, :] #Remove first frame?
                     
                     if train:
                         reward = torch.tensor([reward], device=self.device, dtype=torch.float)

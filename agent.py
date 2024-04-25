@@ -130,7 +130,7 @@ for frame_idx in tqdm(range(1, num_frames + 1)):
 
     epsilon = _epsilon(frame_idx)
     action = model.act(state, epsilon)
-
+    
     result = env.step(action)
  
    

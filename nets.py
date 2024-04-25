@@ -43,7 +43,7 @@ class CnnDQN(nn.Module):
                 state   = torch.FloatTensor(state).unsqueeze(0)
                 state = state.to(self.device)
                 q_value = self.forward(state)
-                action  = q_value.max(1)[1].item()
+                action  = q_value.max(1)[1].item() #change this to get most probable action?
             else:
                 action = random.randrange(self.num_actions)
         return action

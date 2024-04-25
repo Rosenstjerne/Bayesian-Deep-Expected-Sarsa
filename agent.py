@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 from tqdm import tqdm
+import torch.nn.functional as F
 
 #CUSTOM IMPORTS
 from wrappers import *
@@ -22,7 +23,7 @@ epsilon_decay = 30000
 
 _epsilon = lambda frame: epsilon_E + (epsilon_S - epsilon_E)*np.exp(-frame/epsilon_decay)
 
-
+#Propably need to change this
 def make_atari(env_id, render_mode=None):
     env = gym.make(env_id, render_mode = render_mode)
     assert 'NoFrameskip' in env.spec.id
@@ -30,7 +31,7 @@ def make_atari(env_id, render_mode=None):
     env = MaxAndSkipEnv(env, skip=4)
     return env
 
-def wrap_deepmind(env, episode_life=True, clip_rewards=True, frame_stack=True, scale=False):
+def wrap_deepmind(env, episode_life=True, clip_rewards=True, frame_stack=False, scale=False):
     """Configure environment for DeepMind-style Atari.
     """
     if episode_life:
@@ -68,7 +69,8 @@ env    = wrap_pytorch(env)
     next_q_values = model(next_state)
     
     q_value          = q_values.gather(1, action.unsqueeze(1)).squeeze(1)
-    action_probabilities = F.softmax(next_q_values, dim=1)
+    action_probabilities = torch.softmax(next_q_values, dim=1)
+    action probabilities = 
     expected_q_value = reward + gamma * torch.sum(next_q_values * action_probabilities, dim=1) * (1 - done)
     
     loss = (q_value - expected_q_value.data).pow(2).mean()
@@ -89,13 +91,30 @@ def compute_td_loss(batch_size, device):
 
     q_values      = model(state)
     next_q_values = model(next_state)
+
     
-    q_value          = q_values.gather(1, action.unsqueeze(1)).squeeze(1)
-    next_q_value     = next_q_values.max(1)[0]
+    q_values = model(state)
+    next_q_values = model(next_state)
+
+    q_value = q_values.gather(1, action.unsqueeze(1)).squeeze(1)
+
+    action_probs = F.softmax(next_q_values, dim=1)
+    expected_q_values = torch.sub(torch.sum(action_probs * next_q_values, dim=1),q_value)
+
+    target_q_values = reward + gamma * expected_q_values * (1 - done)
+    loss = (q_value - target_q_values.data).pow(2).mean()
+    
+    
+    """q_value          = q_values.gather(1, action.unsqueeze(1)).squeeze(1)
+    #next_q_value     = next_q_values.max(1)[0]
+    #next_q_value = sum(self.Q(next_state)[act] * self.softmax(self.Q(next_state))[act] for act in range(self.num_actions)-self.Q(state)[action])
+    action_probabilities = torch.softmax(next_q_values, dim=1)
+    next_q_values = torch.sum(next_q_values[1, act] * action_probabilities[1,act] for act in range(self.num_actions))
     expected_q_value = reward + gamma * next_q_value * (1 - done)
+
     
-    loss = (q_value - expected_q_value.data).pow(2).mean()
-        
+    loss = (q_value - expected_q_value.data).pow(2).mean()"""
+    
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
@@ -129,7 +148,7 @@ state, _ = env.reset()
 for frame_idx in tqdm(range(1, num_frames + 1)):
 
     epsilon = _epsilon(frame_idx)
-    action = model.act(state, epsilon)
+    action = model.act(state, epsilon) ####
     
     result = env.step(action)
  
@@ -160,6 +179,6 @@ for frame_idx in tqdm(range(1, num_frames + 1)):
         loss = compute_td_loss(batch_size, device)
         losses.append(loss)
       
-    if frame_idx % 10000 == 0:
+    if frame_idx % 100000 == 0:
         rgb_array = env.render()
         plot(frame_idx, all_rewards, losses, rgb_array, (step, ep, max_steps))

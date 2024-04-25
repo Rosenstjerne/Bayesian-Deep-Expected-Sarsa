@@ -1,7 +1,7 @@
 import torch
 import random
 import numpy as np
-import gym
+import gymnasium as gym
 import torch.optim as optim
 
 #custom imports

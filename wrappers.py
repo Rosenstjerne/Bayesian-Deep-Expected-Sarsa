@@ -167,9 +167,9 @@ class FrameStack(gym.Wrapper):
         return self._get_ob(), info
 
     def step(self, action):
-        ob, reward, done, info = self.env.step(action)
+        ob, reward, terminated, truncated, info = self.env.step(action)
         self.frames.append(ob)
-        return self._get_ob(), reward, done, info
+        return self._get_ob(), reward, terminated, truncated, info
 
     def _get_ob(self):
         assert len(self.frames) == self.k

@@ -162,13 +162,20 @@ class Agent:
         self.model.load_state_dict(torch.load(os.path.join(self.ckptdir, latest_ckpt)))
         
     def update(self, batch_size):
+
+        #zeroing the gradients
         self.model.zero_grad()
 
+        #Retrieving batch
         state, action, reward, terminal, next_state = self.retrieve(batch_size)
+        #calculates the q values for the given state 
         q = self.model(state).gather(1, action.view(batch_size, 1))
+        #calculates the q values for the next state
         qmax = self.clone_model(next_state).max(dim=1)[0]
         
+        #Calculates the target value
         nonterminal_target = reward + self.gamma*qmax
+        #
         terminal_target = reward
         
         target = terminal.float()*terminal_target + (~terminal).float()*nonterminal_target

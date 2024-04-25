@@ -86,11 +86,11 @@ class FireResetEnv(gym.Wrapper):
 
     def reset(self, **kwargs):
         self.env.reset(**kwargs)
-        obs, _, done, _, info = self.env.step(1)
-        if done:
+        obs, _, t, trun, info = self.env.step(1)
+        if t or trun:
             self.env.reset(**kwargs)
-        obs, _, done, _, info = self.env.step(2)
-        if done:
+        obs, _, t, trun, info = self.env.step(2)
+        if t or trun:
             self.env.reset(**kwargs)
         return obs, info
 
@@ -107,7 +107,8 @@ class EpisodicLifeEnv(gym.Wrapper):
         self.was_real_done  = True
 
     def step(self, action):
-        obs, reward, done, truncated, info = self.env.step(action)
+        obs, reward, terminated, truncated, info = self.env.step(action)
+        done = terminated or truncated
         self.was_real_done = done
         # check current lives, make loss of life terminal,
         # then update lives to handle bonus lives
@@ -147,12 +148,15 @@ class MaxAndSkipEnv(gym.Wrapper):
     def step(self, action):
         """Repeat action, sum reward, and max over last observations."""
         total_reward = 0.0
+        terminated = None
+        truncated = None
         done = None
         for i in range(self._skip):
-            obs, reward, done, truncated, info = self.env.step(action)
+            obs, reward, terminated, truncated, info = self.env.step(action)
             if i == self._skip - 2: self._obs_buffer[0] = obs
             if i == self._skip - 1: self._obs_buffer[1] = obs
             total_reward += reward
+            done = terminated or terminated
             if done:
                 break
         # Note that the observation on the done=True frame
@@ -294,12 +298,13 @@ def wrap_pytorch(env):
     return ImageToPyTorch(env)
 
 
-env_id = "BreakoutNoFrameskip-v4"
+env_id = "PongNoFrameskip-v4"
 env    = make_atari(env_id, render_mode='rgb_array')
 env    = wrap_deepmind(env)
 env    = wrap_pytorch(env)
 
-def compute_td_loss(batch_size, device):
+# is this excepted sarsa? 
+"""def compute_td_loss(batch_size, device):
     state, action, reward, next_state, done = replay_buffer.replay(batch_size)
     state      = torch.tensor(state).to(device)
     next_state = torch.tensor(np.array(next_state), requires_grad=False).to(device)
@@ -313,6 +318,29 @@ def compute_td_loss(batch_size, device):
     q_value          = q_values.gather(1, action.unsqueeze(1)).squeeze(1)
     action_probabilities = F.softmax(next_q_values, dim=1)
     expected_q_value = reward + gamma * torch.sum(next_q_values * action_probabilities, dim=1) * (1 - done)
+    
+    loss = (q_value - expected_q_value.data).pow(2).mean()
+        
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    
+    return loss.item()"""
+
+def compute_td_loss(batch_size, device):
+    state, action, reward, next_state, done = replay_buffer.replay(batch_size)
+    state      = torch.tensor(state).to(device)
+    next_state = torch.tensor(np.array(next_state), requires_grad=False).to(device)
+    action     = torch.LongTensor(action).to(device)
+    reward     = torch.FloatTensor(reward).to(device)
+    done       = torch.FloatTensor(done).to(device)
+
+    q_values      = model(state)
+    next_q_values = model(next_state)
+    
+    q_value          = q_values.gather(1, action.unsqueeze(1)).squeeze(1)
+    next_q_value     = next_q_values.max(1)[0]
+    expected_q_value = reward + gamma * next_q_value * (1 - done)
     
     loss = (q_value - expected_q_value.data).pow(2).mean()
         
@@ -368,13 +396,15 @@ class CnnDQN(nn.Module):
 
 model = CnnDQN(env.observation_space.shape, env.action_space.n)
 
-
-#model = model.cuda()
+if device == 'cuda':
+    model = model.cuda()
+else:
+    model = model.cpu()
     
 optimizer = optim.Adam(model.parameters(), lr=0.00001)
 
-replay_initial = 100
-replay_buffer = Replay_Buffer(1000)
+replay_initial = 10000
+replay_buffer = Replay_Buffer(100000)
 
 def plot(frame_idx, rewards, losses, game, game_data):
     clear_output(True)
@@ -390,7 +420,7 @@ def plot(frame_idx, rewards, losses, game, game_data):
     plt.imshow(game)
     plt.show()
 
-num_frames = 14000
+num_frames = 1000000
 batch_size = 32
 gamma      = 0.99
 
@@ -427,6 +457,6 @@ for frame_idx in tqdm(range(1, num_frames + 1)):
         loss = compute_td_loss(batch_size, device)
         losses.append(loss)
       
-    if frame_idx % 10000 == 0:
+    if frame_idx % 50000 == 0:
         rgb_array = env.render()
         plot(frame_idx, all_rewards, losses, rgb_array, (step, ep, max_steps))

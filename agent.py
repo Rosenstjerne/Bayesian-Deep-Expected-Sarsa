@@ -92,19 +92,21 @@ def compute_td_loss(batch_size, device):
     q_values      = model(state)
     next_q_values = model(next_state)
 
-    
-    q_values = model(state)
-    next_q_values = model(next_state)
-
     q_value = q_values.gather(1, action.unsqueeze(1)).squeeze(1)
 
     action_probs = F.softmax(next_q_values, dim=1)
-    expected_q_values = torch.sub(torch.sum(action_probs * next_q_values, dim=1),q_value)
+    expected_q_values = torch.sum(action_probs * next_q_values, dim=1)
 
     target_q_values = reward + gamma * expected_q_values * (1 - done)
     loss = (q_value - target_q_values.data).pow(2).mean()
     
     
+    
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    
+    return loss.item()
     """q_value          = q_values.gather(1, action.unsqueeze(1)).squeeze(1)
     #next_q_value     = next_q_values.max(1)[0]
     #next_q_value = sum(self.Q(next_state)[act] * self.softmax(self.Q(next_state))[act] for act in range(self.num_actions)-self.Q(state)[action])
@@ -114,12 +116,6 @@ def compute_td_loss(batch_size, device):
 
     
     loss = (q_value - expected_q_value.data).pow(2).mean()"""
-    
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
-    
-    return loss.item()
 
 model = CnnDQN(env.observation_space.shape, env.action_space.n, device)
 

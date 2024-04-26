@@ -56,30 +56,7 @@ env    = make_atari(env_id, render_mode='rgb_array')
 env    = wrap_deepmind(env)
 env    = wrap_pytorch(env)
 
-# is this excepted sarsa? 
-"""def compute_td_loss(batch_size, device):
-    state, action, reward, next_state, done = replay_buffer.replay(batch_size)
-    state      = torch.tensor(state).to(device)
-    next_state = torch.tensor(np.array(next_state), requires_grad=False).to(device)
-    action     = torch.LongTensor(action).to(device)
-    reward     = torch.FloatTensor(reward).to(device)
-    done       = torch.FloatTensor(done).to(device)
 
-    q_values      = model(state)
-    next_q_values = model(next_state)
-    
-    q_value          = q_values.gather(1, action.unsqueeze(1)).squeeze(1)
-    action_probabilities = torch.softmax(next_q_values, dim=1)
-    action probabilities = 
-    expected_q_value = reward + gamma * torch.sum(next_q_values * action_probabilities, dim=1) * (1 - done)
-    
-    loss = (q_value - expected_q_value.data).pow(2).mean()
-        
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
-    
-    return loss.item()"""
 
 def compute_td_loss(batch_size, device):
     state, action, reward, next_state, done = replay_buffer.replay(batch_size)
@@ -107,15 +84,6 @@ def compute_td_loss(batch_size, device):
     optimizer.step()
     
     return loss.item()
-    """q_value          = q_values.gather(1, action.unsqueeze(1)).squeeze(1)
-    #next_q_value     = next_q_values.max(1)[0]
-    #next_q_value = sum(self.Q(next_state)[act] * self.softmax(self.Q(next_state))[act] for act in range(self.num_actions)-self.Q(state)[action])
-    action_probabilities = torch.softmax(next_q_values, dim=1)
-    next_q_values = torch.sum(next_q_values[1, act] * action_probabilities[1,act] for act in range(self.num_actions))
-    expected_q_value = reward + gamma * next_q_value * (1 - done)
-
-    
-    loss = (q_value - expected_q_value.data).pow(2).mean()"""
 
 model = CnnDQN(env.observation_space.shape, env.action_space.n, device)
 
@@ -129,7 +97,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.00001)
 replay_initial = 10000
 replay_buffer = Replay_Buffer(100000)
 
-num_frames = 1000000
+num_frames = 2000000
 batch_size = 32
 gamma      = 0.99
 

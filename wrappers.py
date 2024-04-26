@@ -25,8 +25,8 @@ class NoopResetEnv(gym.Wrapper):
         assert noops > 0
         obs = None
         for _ in range(noops):
-            obs, _, done, _, info = self.env.step(self.noop_action)
-            if done:
+            obs, _, terminated, truncated, info = self.env.step(self.noop_action)
+            if terminated or truncated:
                 obs = self.env.reset(**kwargs)
         return obs, info
 
@@ -63,8 +63,7 @@ class EpisodicLifeEnv(gym.Wrapper):
         self.was_real_done  = True
 
     def step(self, action):
-        obs, reward, terminated, truncated, info = self.env.step(action)
-        done = terminated or truncated
+        obs, reward, done, truncated, info = self.env.step(action)
         self.was_real_done = done
         # check current lives, make loss of life terminal,
         # then update lives to handle bonus lives
@@ -150,9 +149,6 @@ class FrameStack(gym.Wrapper):
     def __init__(self, env, k):
         """Stack k last frames.
         Returns lazy array, which is much more memory efficient.
-        See Also
-        --------
-        baselines.common.atari_wrappers.LazyFrames
         """
         gym.Wrapper.__init__(self, env)
         self.k = k
@@ -187,10 +183,9 @@ class ScaledFloatFrame(gym.ObservationWrapper):
 class LazyFrames(object):
     def __init__(self, frames):
         """This object ensures that common frames between the observations are only stored once.
-        It exists purely to optimize memory usage which can be huge for DQN's 1M frames replay
+        It exists purely to optimize memory usage which can be huge for DQN's frames replay
         buffers.
-        This object should only be converted to numpy array before being passed to the model.
-        You'd not believe how complex the previous solution was."""
+        This object should only be converted to numpy array before being passed to the model."""
         self._frames = frames
         self._out = None
 

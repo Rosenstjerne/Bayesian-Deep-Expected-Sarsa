@@ -31,7 +31,7 @@ def make_atari(env_id, render_mode=None):
     env = MaxAndSkipEnv(env, skip=4)
     return env
 
-def wrap_deepmind(env, episode_life=True, clip_rewards=True, frame_stack=False, scale=False):
+def wrap_deepmind(env, episode_life=True, clip_rewards=True, frame_stack=True, scale=False):
     """Configure environment for DeepMind-style Atari.
     """
     if episode_life:
@@ -95,7 +95,7 @@ def compute_td_loss(batch_size, device):
     q_value = q_values.gather(1, action.unsqueeze(1)).squeeze(1)
 
     action_probs = F.softmax(next_q_values, dim=1)
-    expected_q_values = torch.sum(action_probs * next_q_values, dim=1)
+    expected_q_values = torch.sum(action_probs * next_q_values, dim=1) #Removed subtraction. Redundant?
 
     target_q_values = reward + gamma * expected_q_values * (1 - done)
     loss = (q_value - target_q_values.data).pow(2).mean()

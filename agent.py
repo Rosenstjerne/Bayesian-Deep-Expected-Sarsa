@@ -17,13 +17,14 @@ from plotting import plot
 cv2.ocl.setUseOpenCL(False)
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-epsilon_S = 1.0
-epsilon_E = 0.01
-epsilon_decay = 30000
+epsilon_Start = 1.0
+epsilon_End = 0.01
+epsilon_decay_factor = 30000
 
-_epsilon = lambda frame: epsilon_E + (epsilon_S - epsilon_E)*np.exp(-frame/epsilon_decay)
+# Epsilon function to calculate exploration rate
+_epsilon = lambda frame: epsilon_End + (epsilon_Start - epsilon_End)*np.exp(-frame/epsilon_decay_factor)
 
-#Propably need to change this
+# Function to create and configure an Atari environment
 def make_atari(env_id, render_mode=None):
     env = gym.make(env_id, render_mode = render_mode)
     assert 'NoFrameskip' in env.spec.id
@@ -31,6 +32,7 @@ def make_atari(env_id, render_mode=None):
     env = MaxAndSkipEnv(env, skip=4)
     return env
 
+# Function to apply DeepMind-style wrapping to an environment
 def wrap_deepmind(env, episode_life=True, clip_rewards=True, frame_stack=True, scale=False):
     """Configure environment for DeepMind-style Atari.
     """
@@ -47,10 +49,11 @@ def wrap_deepmind(env, episode_life=True, clip_rewards=True, frame_stack=True, s
         env = FrameStack(env, 4)
     return env
 
+# Function to apply PyTorch-specific wrapping, changing the order of dimensions
 def wrap_pytorch(env):
     return ImageToPyTorch(env)
 
-
+#Create and wrap environment
 env_id = "PongNoFrameskip-v4"
 env    = make_atari(env_id, render_mode='rgb_array')
 env    = wrap_deepmind(env)
@@ -70,14 +73,11 @@ def compute_td_loss(batch_size, device):
     next_q_values = model(next_state)
 
     q_value = q_values.gather(1, action.unsqueeze(1)).squeeze(1)
-
     action_probs = F.softmax(next_q_values, dim=1)
-    expected_q_values = torch.sum(action_probs * next_q_values, dim=1)
 
+    expected_q_values = torch.sum(action_probs * next_q_values, dim=1)
     target_q_values = reward + gamma * expected_q_values * (1 - done)
     loss = (q_value - target_q_values.data).pow(2).mean()
-    
-    
     
     optimizer.zero_grad()
     loss.backward()
@@ -85,15 +85,18 @@ def compute_td_loss(batch_size, device):
     
     return loss.item()
 
-model = CnnDQN(env.observation_space.shape, env.action_space.n, device)
+model = CNNDES(env.observation_space.shape, env.action_space.n, device)
 
 if device == 'cuda':
     model = model.cuda()
+    print("Using CUDA")
 else:
     model = model.cpu()
+    print("Using CPU")
     
 optimizer = optim.Adam(model.parameters(), lr=0.00001)
 
+# Replay buffer, training parameters, and tracking variables
 replay_initial = 10000
 replay_buffer = Replay_Buffer(100000)
 
@@ -101,6 +104,7 @@ num_frames = 2000000
 batch_size = 32
 gamma      = 0.99
 
+# Variables to track progress and results
 losses = []
 all_rewards = []
 episode_reward = 0

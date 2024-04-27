@@ -4,9 +4,9 @@ import torch.nn as nn
 import torch.optim as optim
 import random
 
-class CnnDQN(nn.Module):
+class CNNDES(nn.Module):
     def __init__(self, input_shape, num_actions, device):
-        super(CnnDQN, self).__init__()
+        super(CNNDES, self).__init__()
         
         self.device = device
         self.input_shape = input_shape
@@ -43,7 +43,7 @@ class CnnDQN(nn.Module):
                 state   = torch.FloatTensor(state).unsqueeze(0)
                 state = state.to(self.device)
                 q_value = self.forward(state)
-                action  = q_value.max(1)[1].item() #change this to get most probable action?
+                action  = q_value.max(1)[1].item()
             else:
                 action = random.randrange(self.num_actions)
         return action

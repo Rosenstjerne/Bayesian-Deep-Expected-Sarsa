@@ -16,7 +16,7 @@ def plot(frame_idx, rewards, losses, game, game_data):
 
     # Plotting the rewards
     plt.subplot(131)
-    plt.title(f'Frame: {frame_idx}, Avg Reward (Last 10): {np.mean(rewards[-10:]):.2f}')
+    plt.title(f'Frame: {frame_idx}, Avg Reward: {np.mean(rewards[-10:]):.2f}')
     plt.xlabel("Episodes")
     plt.ylabel("Reward")
     plt.plot(rewards, color='b', label="Rewards")

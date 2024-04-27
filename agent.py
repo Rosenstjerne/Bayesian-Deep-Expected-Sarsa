@@ -147,6 +147,6 @@ for frame_idx in tqdm(range(1, num_frames + 1)):
         loss = compute_td_loss(batch_size, device)
         losses.append(loss)
       
-    if frame_idx % 10000 == 0:
+    if frame_idx % 1000000 == 0:
         rgb_array = env.render()
         plot(frame_idx, all_rewards, losses, rgb_array, (step, ep, max_steps))

@@ -82,6 +82,7 @@ def compute_td_loss(batch_size, device):
 
     ###
     kl, _ = calculate_kl_terms(model)
+    kl = kl.to(device)
     loss += kl / batch_size
     ###
     

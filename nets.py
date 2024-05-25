@@ -20,8 +20,8 @@ class CNNDES(nn.Module):
 
         self.fc_input_dim = self.feature_size()
 
-        self.fc1 = VariationalBayesianLinear(self.fc_input_dim, 512)
-        self.fc2 = VariationalBayesianLinear(512, num_actions)
+        self.fc1 = VariationalBayesianLinear(self.fc_input_dim, 512, device=self.device)
+        self.fc2 = VariationalBayesianLinear(512, num_actions, device=self.device)
 
     def feature_size(self):
         return self.conv3(self.conv2(self.conv1(torch.zeros(1, *self.input_shape)))).view(1, -1).size(1)

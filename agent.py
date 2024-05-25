@@ -6,6 +6,7 @@ import torch
 import torch.optim as optim
 from tqdm import tqdm
 import torch.nn.functional as F
+from VBlayer import VariationalBayesianLinear as VBL, calculate_kl_terms, update_prior_bnn
 
 #CUSTOM IMPORTS
 from wrappers import *
@@ -78,6 +79,11 @@ def compute_td_loss(batch_size, device):
     expected_q_values = torch.sum(action_probs * next_q_values, dim=1)
     target_q_values = reward + gamma * expected_q_values * (1 - done)
     loss = (q_value - target_q_values.data).pow(2).mean()
+
+    ###
+    kl, _ = calculate_kl_terms(model)
+    loss += kl / batch_size
+    ###
     
     optimizer.zero_grad()
     loss.backward()
@@ -86,6 +92,8 @@ def compute_td_loss(batch_size, device):
     return loss.item()
 
 model = CNNDES(env.observation_space.shape, env.action_space.n, device)
+new_prior_model = CNNDES(env.observation_space.shape, env.action_space.n, device)
+
 
 if device == 'cuda':
     model = model.cuda()
@@ -119,9 +127,8 @@ for frame_idx in tqdm(range(1, num_frames + 1)):
     action = model.act(state, epsilon) ####
     
     result = env.step(action)
- 
-   
     next_state, reward, terminated, truncated, info = result
+    next_state = next_state.astype(np.float32)
     done = terminated or truncated
 
     if len(result) == 4:
@@ -146,7 +153,12 @@ for frame_idx in tqdm(range(1, num_frames + 1)):
     if len(replay_buffer) > replay_initial:
         loss = compute_td_loss(batch_size, device)
         losses.append(loss)
+
+        # Periodically update the priors of the BNN layers
+    if frame_idx % 10000 == 0:  # Adjust the frequency as needed
+        update_prior_bnn(model, new_prior_model)
+        new_prior_model.load_state_dict(model.state_dict())
       
-    if frame_idx % 1000000 == 0:
+    if frame_idx % 2000000 == 0:
         rgb_array = env.render()
         plot(frame_idx, all_rewards, losses, rgb_array, (step, ep, max_steps))

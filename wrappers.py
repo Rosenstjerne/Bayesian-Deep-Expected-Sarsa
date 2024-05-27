@@ -1,3 +1,7 @@
+"""
+Credit: deepmind, openai baselines wrappers
+https://github.com/openai/baselines/blob/master/baselines/common/atari_wrappers.py
+"""
 import gym
 import cv2
 import numpy as np

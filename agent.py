@@ -6,7 +6,7 @@ import torch
 import torch.optim as optim
 from tqdm import tqdm
 import torch.nn.functional as F
-from VBlayer import VariationalBayesianLinear as VBL, calculate_kl_terms, update_prior_bnn
+from VBlayer import update_prior_bnn
 
 #CUSTOM IMPORTS
 from wrappers import *
@@ -63,6 +63,14 @@ env    = wrap_pytorch(env)
 
 
 def compute_td_loss(batch_size, device):
+    """
+    Function to compute the TD loss
+    Args:
+        batch_size (int): Size of the batch to sample from the replay buffer.
+        device (str): Device to run the model on.
+    Returns:
+        loss.item() (float): The loss value.
+    """
     state, action, reward, next_state, done = replay_buffer.replay(batch_size)
     state      = torch.tensor(state).to(device)
     next_state = torch.tensor(np.array(next_state), requires_grad=False).to(device)
@@ -154,6 +162,6 @@ for frame_idx in tqdm(range(1, num_frames + 1)):
         update_prior_bnn(model, new_prior_model)
         new_prior_model.load_state_dict(model.state_dict())
       
+      # Periodically plot the results
     if frame_idx % 200000 == 0:
-        rgb_array = env.render()
         plot(frame_idx, all_rewards, losses)

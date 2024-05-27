@@ -1,13 +1,31 @@
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
-import torch.optim as optim
-import random
 import numpy as np
 from VBlayer import VariationalBayesianLinear
 
 
 class CNNDES(nn.Module):
+    """
+    Convolutional Neural Network for Deep Exploration Strategy
+
+    Args:
+        input_shape (tuple): Shape of the input tensor.
+        num_actions (int): Number of actions in the environment.
+        device (str): Device to run the model on.
+    
+    Attributes:
+        device (str): Device to run the model on.
+        input_shape (tuple): Shape of the input tensor.
+        num_actions (int): Number of actions in the environment.
+        conv1 (nn.Conv2d): First convolutional layer.
+        conv2 (nn.Conv2d): Second convolutional layer.
+        conv3 (nn.Conv2d): Third convolutional layer.
+        fc_input_dim (int): Input dimension of the fully connected layer.
+        fc1 (VariationalBayesianLinear): First fully connected layer.
+        fc2 (VariationalBayesianLinear): Second fully connected layer.
+
+    """
     def __init__(self, input_shape, num_actions, device):
         super(CNNDES, self).__init__()
         self.device = device

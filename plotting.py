@@ -1,18 +1,27 @@
-from IPython.display import clear_output
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 import numpy as np
-
+import matplotlib.colors as mcolors
 
 # Function to calculate a moving average
 def moving_average(data, window_size):
     return np.convolve(data, np.ones(window_size) / window_size, mode='valid')
 
+# Data for plotting
+frame_idx = 100
+rewards = np.random.normal(0, 1, 100).cumsum()  # Simulated rewards data
+losses = np.random.normal(0, 1, 100).cumsum()   # Simulated losses data
 
-def plot(frame_idx, rewards, losses, game, game_data):
-    clear_output(True)
+# Plot function
+def plot(frame_idx, rewards, losses):
     plt.figure(figsize=(20,5))
 
-    moving_avg_window = 10  #How many data points to consider for the moving average
+    # Customizing the background
+    plt.rcParams['axes.facecolor'] = '#f3fafd'
+    plt.rcParams['axes.edgecolor'] = 'none'
+    plt.rcParams['axes.grid'] = True
+    plt.rcParams['grid.color'] = 'white'
+    plt.rcParams['grid.linestyle'] = '-'
+    plt.rcParams['grid.linewidth'] = 1
 
     # Plotting the rewards
     plt.subplot(131)
@@ -20,15 +29,6 @@ def plot(frame_idx, rewards, losses, game, game_data):
     plt.xlabel("Episodes")
     plt.ylabel("Reward")
     plt.plot(rewards, color='b', label="Rewards")
-    # Add a moving average as a trend line
-    if len(rewards) >= moving_avg_window:
-        reward_trend = moving_average(rewards, moving_avg_window)
-        plt.plot(
-            range(moving_avg_window - 1, len(rewards)),  # Align the x-axis
-            reward_trend,
-            color='orange',
-            label=f'Moving Avg (window={moving_avg_window})'
-        )
     plt.grid(True)
     plt.legend()
 
@@ -40,5 +40,8 @@ def plot(frame_idx, rewards, losses, game, game_data):
     plt.plot(losses, color='r', label="Losses")
     plt.grid(True)
     plt.legend()
+    plt.tight_layout()
 
     plt.show()
+
+plot(frame_idx, rewards, losses)

@@ -79,12 +79,6 @@ def compute_td_loss(batch_size, device):
     expected_q_values = torch.sum(action_probs * next_q_values, dim=1)
     target_q_values = reward + gamma * expected_q_values * (1 - done)
     loss = (q_value - target_q_values.data).pow(2).mean()
-
-    ###
-    kl, _ = calculate_kl_terms(model)
-    kl = kl.to(device)
-    loss += kl / batch_size
-    ###
     
     optimizer.zero_grad()
     loss.backward()
@@ -109,7 +103,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.00001)
 replay_initial = 10000
 replay_buffer = Replay_Buffer(100000)
 
-num_frames = 2000000
+num_frames = 1000000
 batch_size = 32
 gamma      = 0.99
 
@@ -160,6 +154,6 @@ for frame_idx in tqdm(range(1, num_frames + 1)):
         update_prior_bnn(model, new_prior_model)
         new_prior_model.load_state_dict(model.state_dict())
       
-    if frame_idx % 2000000 == 0:
+    if frame_idx % 200000 == 0:
         rgb_array = env.render()
-        plot(frame_idx, all_rewards, losses, rgb_array, (step, ep, max_steps))
+        plot(frame_idx, all_rewards, losses)

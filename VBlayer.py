@@ -18,7 +18,7 @@ class VariationalBayesianLinear(nn.Module):
     weight: torch.Tensor
 
     def __init__(self, in_features: int, out_features: int, bias: bool = True, training: bool = True,
-                 prior_log_sig2=0, device='cpu') -> None:
+                 prior_log_sig2=0, device='cuda') -> None:
         super(VariationalBayesianLinear, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
@@ -26,16 +26,16 @@ class VariationalBayesianLinear(nn.Module):
         self.training = training
         self.device = device
 
-        self.weight_mu = nn.Parameter(torch.empty((out_features, in_features), device=device))
-        self.weight_log_sig2 = nn.Parameter(torch.empty((out_features, in_features), device=device))
-        self.weight_mu_prior = nn.Parameter(torch.zeros((out_features, in_features), device=device), requires_grad=False)
-        self.weight_log_sig2_prior = nn.Parameter(prior_log_sig2 * torch.zeros((out_features, in_features), device=device), requires_grad=False)
+        self.weight_mu = nn.Parameter(torch.empty((out_features, in_features)).to(device))
+        self.weight_log_sig2 = nn.Parameter(torch.empty((out_features, in_features)).to(device))
+        self.weight_mu_prior = nn.Parameter(torch.zeros((out_features, in_features)).to(device), requires_grad=False)
+        self.weight_log_sig2_prior = nn.Parameter(prior_log_sig2 * torch.zeros((out_features, in_features)).to(device), requires_grad=False)
         
         if self.has_bias:
-            self.bias_mu = nn.Parameter(torch.Tensor(out_features, device=device))
-            self.bias_log_sig2 = nn.Parameter(torch.Tensor(out_features, device=device))
-            self.bias_mu_prior = nn.Parameter(torch.zeros(out_features, device=device), requires_grad=False)
-            self.bias_log_sig2_prior = nn.Parameter(prior_log_sig2 * torch.zeros(out_features, device=device), requires_grad=False)
+            self.bias_mu = nn.Parameter(torch.Tensor(out_features).to(device))
+            self.bias_log_sig2 = nn.Parameter(torch.Tensor(out_features).to(device))
+            self.bias_mu_prior = nn.Parameter(torch.zeros(out_features).to(device), requires_grad=False)
+            self.bias_log_sig2_prior = nn.Parameter(prior_log_sig2 * torch.zeros(out_features).to(device), requires_grad=False)
         else:
             self.register_parameter('bias_mu', None)
             self.register_parameter('bias_log_sig2', None)

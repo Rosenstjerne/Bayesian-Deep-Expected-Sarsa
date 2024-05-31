@@ -90,6 +90,12 @@ def compute_td_loss(batch_size, device):
     
     optimizer.zero_grad()
     loss.backward()
+    """
+    Stops gradient from exceeding 100
+    """
+    ########################################################
+    torch.nn.utils.clip_grad_value_(model.parameters(), 100)
+    ########################################################
     optimizer.step()
     
     return loss.item()
@@ -111,7 +117,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.00001)
 replay_initial = 10000
 replay_buffer = Replay_Buffer(100000)
 
-num_frames = 1000000
+num_frames = 2400000
 batch_size = 32
 gamma      = 0.99
 
@@ -163,5 +169,5 @@ for frame_idx in tqdm(range(1, num_frames + 1)):
         new_prior_model.load_state_dict(model.state_dict())
       
       # Periodically plot the results
-    if frame_idx % 200000 == 0:
+    if frame_idx % 2400000 == 0:
         plot(frame_idx, all_rewards, losses)
